@@ -9,13 +9,13 @@ WIDTH=800
 HEIGHT=600
 PERCENTILE_FOR_DISTRIBUTION=0.995
 ERROR_PATTERN='(5..|404)'
-
+print("Start")
 cmd = commandArgs(trailingOnly = TRUE)
-if (length(cmd)>0) {
-  SLIDING_IN_MIN = as.numeric(cmd[1])  
-} else {
+#if (length(cmd)>0) {
+#  SLIDING_IN_MIN = as.numeric(cmd[1])  
+#} else {
   FILE_NAME = DEFAULT_FILE_NAME
-}
+#}
 
 load_and_install = function(lib){
   if(!lib %in% installed.packages()[,"Package"]) install.packages(lib)

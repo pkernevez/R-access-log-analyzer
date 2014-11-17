@@ -9,7 +9,7 @@ load_and_install("ascii")
 load_and_install("knitr")
 load_and_install("rmarkdown")
 
-source("accessLogAnalyse.R")
+source("src/accessLogAnalyzer.R")
 
 rmarkdown::render("analyseTemplate.Rmd")
 markdownToHTML
