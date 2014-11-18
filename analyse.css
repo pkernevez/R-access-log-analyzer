@@ -1,0 +1,38 @@
+body {
+  font-family:"Ubuntu,Tahoma,sans-serif";
+  max-width: 900px;
+  margin: 0 auto !important;
+  float: none !important;
+}
+
+#toc_header {
+  font-size:20px;
+  font-weight:bold;
+}
+
+th {  
+  background-color:#E0E0E0;
+  border-bottom:1px solid black;
+  border-right:1px solid black;
+  padding:5px;
+}
+
+td {
+  border-bottom:1px dotted black;
+  border-right:1px dotted black;
+  padding:5px;
+}
+
+tr:nth-child(even) {
+    background-color: #EFEFEF;
+}
+
+table { 
+  border-collapse:collapse;
+  border: 1px solid black;
+}
+
+table tr:hover {
+  background-color: #ffff99;
+}
+

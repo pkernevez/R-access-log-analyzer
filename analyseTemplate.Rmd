@@ -2,33 +2,183 @@
 <!-- For more info on the package options see http://yihui.name/knitr/options -->
 
 <!-- Replace below with the title of your project -->
-### AccessLog Analyzer
+# Summary
+Analysed on `r format(Sys.time(), RENDER_DATE_FORMAT)`
 
-<!-- Enter the code required to load your data in the space below. The data will be loaded but the line of code won't show up in your write up (echo=FALSE) in order to save space-->
+Source file : `r FILE_NAME`
+
+Number of lines : `r nrow(access_log)`
+
+Measure from `r format(min(access_log$ts), RENDER_DATE_FORMAT)` 
+to `r format(min(access_log$ts), RENDER_DATE_FORMAT)`
+
+Regex used to define requests' categories :
 ```{r echo=FALSE}
-#### Quick summary of studied data summary(gss[, c( 'educ', 'childs')])
-kable(df, format = "markdown")
+values=unlist(CATEGORIES,use.names = FALSE)
+df=data.frame(names=names(CATEGORIES), regexp=sapply(values, cleanStr, USE.NAMES = FALSE))
+pander(df, style = 'rmarkdown', split.table = 24000)
+#pandoc.table
+``` 
+# Requests throughput over time
+## All responses
+<!-- all_request_per_hours.png -->
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+  log("Creating all_request_per_hours")
+  g = ggplot(access_log, aes(x = ts)) + 
+  geom_density(stat = "bin", binwidth = INTERVAL_IN_SECONDS,
+          colour = "black", fill = "darkgreen") + ylab(paste0("Requests/",INTERVAL_AS_TEXT)) + xlab("Time") 
+  print(g)
 ```
 
-<!-- In the remainder of the document, add R code chunks as needed -->
+## Throughput by category
+<!-- all_request_per_hours_by_type.png -->
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_request_per_hours_by_type")
+g = ggplot(access_log, aes(x = ts)) + 
+  geom_density(stat = "bin", binwidth = INTERVAL_IN_SECONDS, position="stack", aes(fill = category, color=category, order=-as.numeric(category))) + 
+     ylab(paste0("Requests/",INTERVAL_AS_TEXT)) + xlab("Time") 
+print(g)
+```
 
-### Introduction:
+# Response analysis
+## Method
+<!-- http_method -->
+```{r echo=FALSE, h=S_HEIGHT, w=S_WIDTH}
+log("Creating http_method")
+df <- as.data.frame(table(access_log$method))
+colnames(df) <- c('method','freq')
+g = ggplot(df, aes(x = "", y = freq, fill = method, color = method)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  labs(title = "HTTP Methods distribution") + xlab("")
+  print(g)
+```
 
-Insert introduction here...
+## HTTP Code
+<!-- response_code -->
+```{r echo=FALSE, h=S_HEIGHT, w=S_WIDTH}
+  log("Creating response_code")
+  df <- as.data.frame(table(access_log$status))
+  colnames(df) <- c('status','freq')
+  g = ggplot(df, aes(x = "", y = freq, fill = status, color = status)) +
+    geom_bar(width = 1, stat = "identity") +
+    coord_polar("y", start = 0) +
+    labs(title = "HTTP return code distribution") + xlab("")
+  print(g)
+```
 
-### Data:
+## Errors
+### Errors distribution
+<!-- response_error -->
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating response_error")
+server.errors <- grep(ERROR_PATTERN,access_log$status)
+g = ggplot(access_log[server.errors,], aes(x=status)) + geom_histogram(colour="black", fill="red") +
+  labs(title = "HTTP errors distribution")
+print(g)
+```
 
-Insert data section here...
+### Errors over time
+<!-- response_error_by_time -->
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("out/response_error_by_time")
+g = ggplot(access_log[server.errors,], aes(x=ts)) +
+  geom_density(stat='bin',binwidth=INTERVAL_IN_SECONDS, position="stack") +
+  aes(fill = status, color=status, order=-as.numeric(category)) +
+  ylab(paste0('Errors/', INTERVAL_AS_TEXT)) + xlab('Time')
+  print(g)
+```
 
-### Exploratory data analysis:
+# Response time distribution
+<a name="sometext"></a>
+## Summary
+QQQ Tables
 
-Insert exploratory data analysis here...
+## All requests
+### Top 10 slow requests 
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsetime_distribution")
+df=access_log[with(access_log, order(-response.time_millis)),][1:10,c("response.time_millis", "ts", "category", "method", "url_extract", "status")]
+pander(df, style = 'rmarkdown', split.table = 1000)
+```
 
-### Inference:
+### Distribution
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+g = ggplot(access_log, aes(x = response.time_millis)) + 
+  geom_density(colour = "black", fill = "darkgreen")  + xlab("Response time (milliseconds)") 
+print(g)
+``` 
 
-Insert inference section here...
+### Distribution per categories
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsetime_distribution_by_type")
+xmax = quantile(access_log$response.time_millis, c(PERCENTILE_FOR_DISTRIBUTION))
+xmin = min(access_log$response.time_millis)
+g = ggplot(access_log, aes(x = response.time_millis)) + 
+  geom_density(aes(group=category, colour=category))  + 
+  xlab(paste0("Response time (max=",max(access_log$response.time_millis),")")) +
+  coord_cartesian(xlim=c(xmin, xmax))
+print(g)
+```
 
-### Conclusion:
+## Top 5 slow requests and distribution per category
+<!-- Reponse time table -->
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+for (cat in CATEGORY_NAMES) {
+cat("### ", cat)
+log(paste("Distribution", cat))
+subdata = access_log[access_log$category==cat ,]
+  df=subdata[with(subdata, order(-response.time_millis)),][1:5,c("response.time_millis", "ts", "method", "url_extract", "status")]
+  cat(pander(df, style = 'rmarkdown', split.table = 1000))
+  xmax = quantile(subdata$response.time_millis, c(PERCENTILE_FOR_DISTRIBUTION))
+  xmin = min(subdata$response.time_millis)
+  g = ggplot(subdata, aes(x = response.time_millis)) + 
+    geom_density()  + xlab(paste0("Response time (max=",max(subdata$response.time_millis),")")) +
+    coord_cartesian(xlim=c(xmin, xmax))
+  print(g)
+  cat("\n")
+}
+rm(df, subdata)
+``` 
 
-Insert conclusion here...
+# Reponse time over time
+## Global
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+log("Creating response_time_by_time")
+g = ggplot(access_log, aes(ts)) + 
+  xlab("Date") + ylab("response time (ms)") +
+  geom_point(aes(y = response.time_millis), alpha=0.3) + 
+  ggtitle("Response time evolution") +
+  stat_smooth(data=access_log, aes(x=ts, y=response.time_millis), colour="red",method = "gam", formula = y ~ s(x, bs = "cs"))
+print(g)
+```
 
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+log("Creating response_time_by_time_and_category")
+g = ggplot(access_log, aes(ts)) + 
+  xlab("Date") + ylab("response time (ms)") +
+  geom_point(aes(y = response.time_millis, color=category),alpha=0.3) + 
+  ggtitle("Response time evolution by type") +
+  stat_smooth(data=access_log, aes(x=ts, y=response.time_millis), colour="red",method = "gam", formula = y ~ s(x, bs = "cs"))
+print(g)
+```
+
+## Per category
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+for (cat in CATEGORY_NAMES) {
+    log(paste0("Creating response_time_by_time_and_", cat))
+    cat("### ", cat, "\n")
+    subdata = access_log[access_log$category==cat ,]
+    g = ggplot(subdata, aes(ts)) + 
+      xlab("Date") + ylab("response time (ms)") +
+      geom_point(aes(y = response.time_millis), alpha=0.3) + 
+      ggtitle(paste0("Response time evolution for ", cat, " and HTTPCode=200")) +
+      stat_smooth(data=subdata, aes(x=ts, y=response.time_millis), colour="red",method = "gam", formula = y ~ s(x, bs = "cs"))
+    print(g)
+    cat("\n")
+}
+```
+
+
+# QQQ URL des 10 plus lentes,10 plus gros
+# QQQ Les URLS des 10 plus fréquentes
