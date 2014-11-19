@@ -96,10 +96,28 @@ ReadLogFile <- function(file ) {
   print("File loaded")
   access_log
 }
+
+analyseDistribution = function(allData, distrib) {
+  displ = data.frame(matrix(NA,ncol=9,nrow=length(distrib)+1))
+  names(displ)=c("Category", "Number of Requests", "%age", names(distrib[[1]][[2]]))
+  displ[nrow(displ),] = c("All requests", 0, 0, summary(allData))
+  total=0
+  for (i in 1:length(distrib)) {
+    displ[i,"Category"] = names(distrib)[[i]]
+    info = distrib[[i]]
+    displ[i,"Number of Requests"] = info[[1]]
+    displ[i,4:9] = info[[2]]
+    total = total + info[[1]]
+  }
+  displ[nrow(displ),"Number of Requests"]=total
+  displ$'%age' = paste(round(as.numeric(displ$Number) / total * 100,1),"%")
+  return(displ)
+}
+
+
 if (!file.exists("out")) dir.create("out")
 access_log <- ReadLogFile(FILE_NAME)
 str(access_log)
-
 
 opts_knit$set(aliases=c(h = 'fig.height', w = 'fig.width'))
 knit("analyseTemplate.Rmd", quiet = TRUE)

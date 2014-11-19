@@ -17,8 +17,9 @@ Regex used to define requests' categories :
 values=unlist(CATEGORIES,use.names = FALSE)
 df=data.frame(names=names(CATEGORIES), regexp=sapply(values, cleanStr, USE.NAMES = FALSE))
 pander(df, style = 'rmarkdown', split.table = 24000)
-#pandoc.table
 ``` 
+
+
 # Requests throughput over time
 ## All responses
 <!-- all_request_per_hours.png -->
@@ -55,7 +56,15 @@ g = ggplot(df, aes(x = "", y = freq, fill = method, color = method)) +
 ```
 
 ## HTTP Code
-QQQ Table + nb + &age 
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating response code table")
+tmp = data.table(access_log)[, length(ip), by = status]
+setkey( tmp, status)
+setnames(tmp, "V1", "Number of requests")
+tmp$percentage = paste(round(tmp$'Number of requests' / nrow(access_log) * 100,1), "%")
+pander(tmp, style = 'rmarkdown', split.table = 1000)
+```
+
 <!-- response_code -->
 ```{r echo=FALSE, h=S_HEIGHT, w=S_WIDTH}
   log("Creating response_code")
@@ -117,7 +126,13 @@ pander(tmp, style = 'rmarkdown', split.table = 1000)
 # Response time distribution
 <a name="sometext"></a>
 ## Summary
-QQQ Tables
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsetime_distribution")
+distrib = by(access_log, access_log$category, function(x) list(nrow(x), summary(x$response.time_millis)))
+displ = analyseDistribution(access_log$response.time_millis, distrib)
+
+pander(displ, style = 'rmarkdown', split.table = 1000)
+```
 
 ## All requests
 ### Top 10 slow requests 
