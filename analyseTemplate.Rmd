@@ -55,6 +55,7 @@ g = ggplot(df, aes(x = "", y = freq, fill = method, color = method)) +
 ```
 
 ## HTTP Code
+QQQ Table + nb + &age 
 <!-- response_code -->
 ```{r echo=FALSE, h=S_HEIGHT, w=S_WIDTH}
   log("Creating response_code")
@@ -87,6 +88,30 @@ g = ggplot(access_log[server.errors,], aes(x=ts)) +
   aes(fill = status, color=status, order=-as.numeric(category)) +
   ylab(paste0('Errors/', INTERVAL_AS_TEXT)) + xlab('Time')
   print(g)
+```
+
+# Clients
+## Info
+Number of clients (IP Address) : `r length(unique(access_log$ip))`
+
+Number of requests per client (IP Address) :
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsetime_distribution")
+tmp = data.table(access_log)[, length(status), by = ip]
+setkey( tmp, V1)
+setnames(tmp, "V1", "Number of requests")
+tmpSum = summary(tmp$"Number of requests")
+displ = data.frame(matrix(NA,ncol=length(names(tmpSum)),nrow=1))
+names(displ)=names(tmpSum)
+displ[1,]=tmpSum
+pander(displ, style = 'rmarkdown', split.table = 1000)
+```
+
+## Most connected clients
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsetime_distribution")
+tmp=tmp[nrow(tmp):1,][1:min(10,nrow(tmp))]
+pander(tmp, style = 'rmarkdown', split.table = 1000)
 ```
 
 # Response time distribution
