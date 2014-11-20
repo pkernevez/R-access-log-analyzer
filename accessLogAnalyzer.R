@@ -1,16 +1,16 @@
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
 #DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
-#DEFAULT_FILE_NAME="data/access_generic_extract.log"
-DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
-INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval use for computing throughput
+DEFAULT_FILE_NAME="data/access_generic_extract.log"
+#DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
+INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval use for computing throughput (ie groupby)
 URL_EXTRACT_SIZE=40                                     # Size of URL extract for report
 S_WIDTH=6                                               # Width of Small graphs (pies)
-S_HEIGHT=6                                              # Width of Small graphs (pies)
+S_HEIGHT=6                                              # Height of Small graphs (pies)
 B_WIDTH=11                                              # Width of Big graphs 
-B_HEIGHT=7                                              # Width of Big graphs
+B_HEIGHT=7                                              # Height of Big graphs
 PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile use for cuting the distribution graph (due to extreme values)
-ERROR_PATTERN='(5..|404)'                               # Pattern use to identifie HTTP Error
+ERROR_PATTERN='(5..|4.[^1])'                            # Pattern use to identifie HTTP Error, all 5xx and 4xx but 401.
 CATEGORIES=list(                                        # Patterns use to define Categories
   "PAC"=".*\\.pac HTTP/",
   "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
@@ -40,11 +40,22 @@ log <- function(data, ..., sep=""){
 
 print("Start")
 cmd = commandArgs(trailingOnly = TRUE)
-#if (length(cmd)>0) {
-#  SLIDING_IN_MIN = as.numeric(cmd[1])  
-#} else {
-FILE_NAME = DEFAULT_FILE_NAME
-#}
+if (length(cmd)>1) {
+  PATH=cmd[1]
+  FILE_NAMES = list.files(path=cmd[1], pattern = cmd[2], recursive=TRUE)
+} else if(length(cmd) == 1) {
+  PATH="."
+  FILE_NAMES = list.files(pattern = cmd[1], recursive=TRUE)
+} else {
+  PATH="."
+  FILE_NAMES = DEFAULT_FILE_NAME
+}
+
+if (length(FILE_NAMES)==0) {
+  log("No file found with parameters")
+} else {
+  log("Files to load : ", FILE_NAMES)
+}
 
 if (INTERVAL_IN_SECONDS>=3600) {
   INTERVAL_AS_TEXT = paste(round(INTERVAL_IN_SECONDS/3600,2), "hour(s)")
@@ -56,32 +67,50 @@ if (INTERVAL_IN_SECONDS>=3600) {
 
 CATEGORY_NAMES = c(names(CATEGORIES),"Other")
 
-extract = function(url){
-  urlChar = as.character(url)
-  if (nchar(urlChar)>URL_EXTRACT_SIZE) {
-    return(paste0(substr(urlChar, 1, URL_EXTRACT_SIZE), "..."))
-  } else {
-    return(urlChar)
-  }
-}
-
 cleanStr = function(str){
   str = gsub("\\\\", "&#92;", str)
   str = gsub("\\|", "&#124;", str)
+  str = gsub("<", "&#60;", str)
+  str = gsub(">", "&#62;", str)
   return(str)
+}
+
+countToken <- function(char, s) {
+  s = gsub('"[^"]*"',"X", s) 
+  s2 <- gsub(char,"",s)
+  return (nchar(s) - nchar(s2) + 1)
+}
+
+#countToken(" ", '10.8.254.101 - - [07/Sep/2011:03:10:02 +0200] "GET /ValidBigIpConnexion" 200 663 194477')
+extract = function(url){
+  urlChar = as.character(url)
+  if (nchar(urlChar)>URL_EXTRACT_SIZE) {
+    return(cleanStr(paste0(substr(urlChar, 1, URL_EXTRACT_SIZE), "...")))
+  } else {
+    return(cleanStr(urlChar))
+  }
 }
 
 ReadLogFile <- function(file ) {
   # http://en.wikipedia.org/wiki/Common_Log_Format
-  print("Loading file")
-  access_log <- read.table(file, col.names = c("ip", "client", "user", "ts",
-                                               "time_zone", "request", "status", "response.size", "response.time_microsec"))
-  
+  fullFileName = paste0(PATH, .Platform$file.sep, file)
+  log("Loading file : ", fullFileName)
+  titleLine <- readLines(fullFileName,n = 1)
+  if (countToken(" ", titleLine) == 8){ # No duration
+    log("Find 8 columns, add an empty duration to measure")
+    access_log <- read.table(fullFileName, col.names = c("ip", "client", "user", "ts",
+       "time_zone", "request", "status", "response.size"))
+    access_log$response.time_microsec = 0
+  } else {
+    access_log <- read.table(fullFileName, col.names = c("ip", "client", "user", "ts",
+       "time_zone", "request", "status", "response.size", "response.time_microsec"))
+  }
   
   access_log$ts <- strptime(access_log$ts, format = FILE_DATE_FORMAT)
   access_log$time_zone <- as.factor(sub("\\]", "", access_log$time_zone))
   access_log$status <- as.factor(sub("\\]", "", access_log$status))
-  print("Create category")
+  access_log$response.size = suppressWarnings(as.integer(as.character(access_log$response.size)))
+  log("Create category")
   access_log$response.time_millis = round(access_log$response.time_microsec/1000)
   access_log$category="Other"
   access_log$method = str_match(access_log$request, "^([A-Za-z]+)")[,1]
@@ -93,11 +122,12 @@ ReadLogFile <- function(file ) {
   }
   access_log$category = factor(access_log$category, levels=CATEGORY_NAMES)
   access_log$url_extract = sapply(access_log$request, extract)
-  print("File loaded")
+  log("File loaded ( ", nrow(access_log), " rows )")
   access_log
 }
 
 analyseDistribution = function(allData, distrib) {
+  distrib[sapply(distrib, is.null)] <- NULL
   displ = data.frame(matrix(NA,ncol=9,nrow=length(distrib)+1))
   names(displ)=c("Category", "Number of Requests", "%age", names(distrib[[1]][[2]]))
   displ[nrow(displ),] = c("All requests", 0, 0, summary(allData))
@@ -114,9 +144,9 @@ analyseDistribution = function(allData, distrib) {
   return(displ)
 }
 
-
-if (!file.exists("out")) dir.create("out")
-access_log <- ReadLogFile(FILE_NAME)
+tmpAccess = lapply(FILE_NAMES, ReadLogFile)
+access_log = Reduce(function(...) merge(..., all=T), tmpAccess)
+rm(tmpAccess)
 str(access_log)
 
 opts_knit$set(aliases=c(h = 'fig.height', w = 'fig.width'))
