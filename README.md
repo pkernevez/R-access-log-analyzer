@@ -57,3 +57,7 @@ Example :
 - Rscript accessLogAnalyzer.R access.log
 - Rscript accessLogAnalyzer.R /var/log/apache2 access_log
 - Rscript accessLogAnalyzer.R /var/log/apache2 'access.*'
+
+Some execution times 
+* 33Mo log file with 269'909 lines, duration 10 hours sampled by minute => processing time = 1 min 20s
+* 660Mo log file with 4'979'032 lines, duration 7 days sampled by hour => processing time = 20min

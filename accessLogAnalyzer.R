@@ -1,7 +1,7 @@
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
-#DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
-DEFAULT_FILE_NAME="data/access_generic_extract.log"
+DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
+#DEFAULT_FILE_NAME="data/access_generic_extract.log"
 #DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
 INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval use for computing throughput (ie groupby)
 URL_EXTRACT_SIZE=40                                     # Size of URL extract for report
@@ -12,12 +12,22 @@ B_HEIGHT=7                                              # Height of Big graphs
 PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile use for cuting the distribution graph (due to extreme values)
 ERROR_PATTERN='(5..|4.[^1])'                            # Pattern use to identifie HTTP Error, all 5xx and 4xx but 401.
 CATEGORIES=list(                                        # Patterns use to define Categories
-  "PAC"=".*\\.pac HTTP/",
-  "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
-  "JS"=".*\\.js HTTP/",
-  "CSS"=".*\\.css HTTP/",
-  "HTML"=".*\\.html HTTP/"
+  "Confluence"="[A-Z]+\ /confluence/.*",
+  "Archiva"="[A-Z]+\ /archiva/.*",
+  "Svn"="[A-Z]+\ /svn/.*",
+  "Daniela"="[A-Z]+\ /daniela/.*",
+  "Archirepo"="[A-Z]+\ /archirepo/.*",
+  "Nexus"="[A-Z]+\ /nexus/.*",
+  "MavenRepo"="[A-Z]+\ /mavenrepository/.*",
+  "Jira"="[A-Z]+\ /jira/.*"
 )
+# CATEGORIES=list(                                        # Patterns use to define Categories
+#   "PAC"=".*\\.pac HTTP/",
+#   "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
+#   "JS"=".*\\.js HTTP/",
+#   "CSS"=".*\\.css HTTP/",
+#   "HTML"=".*\\.html HTTP/"
+# )
 
 
 load_and_install = function(lib){
@@ -67,6 +77,8 @@ if (INTERVAL_IN_SECONDS>=3600) {
 
 CATEGORY_NAMES = c(names(CATEGORIES),"Other")
 
+"%!in%" <- function(x,table) match(x,table, nomatch = 0) == 0
+
 cleanStr = function(str){
   str = gsub("\\\\", "&#92;", str)
   str = gsub("\\|", "&#124;", str)
@@ -109,7 +121,7 @@ ReadLogFile <- function(file ) {
   access_log$ts <- strptime(access_log$ts, format = FILE_DATE_FORMAT)
   access_log$time_zone <- as.factor(sub("\\]", "", access_log$time_zone))
   access_log$status <- as.factor(sub("\\]", "", access_log$status))
-  access_log$response.size = suppressWarnings(as.integer(as.character(access_log$response.size)))
+  access_log$response.size = suppressWarnings(as.numeric(as.character(access_log$response.size)))
   log("Create category")
   access_log$response.time_millis = round(access_log$response.time_microsec/1000)
   access_log$category="Other"
@@ -126,21 +138,21 @@ ReadLogFile <- function(file ) {
   access_log
 }
 
-analyseDistribution = function(allData, distrib) {
+analyseDistribution = function(allData, distrib, label) {
   distrib[sapply(distrib, is.null)] <- NULL
   displ = data.frame(matrix(NA,ncol=9,nrow=length(distrib)+1))
-  names(displ)=c("Category", "Number of Requests", "%age", names(distrib[[1]][[2]]))
+  names(displ)=c("Category", label, "%age", names(distrib[[1]][[2]]))
   displ[nrow(displ),] = c("All requests", 0, 0, summary(allData))
   total=0
   for (i in 1:length(distrib)) {
     displ[i,"Category"] = names(distrib)[[i]]
     info = distrib[[i]]
-    displ[i,"Number of Requests"] = info[[1]]
+    displ[i,label] = info[[1]]
     displ[i,4:9] = info[[2]]
     total = total + info[[1]]
   }
-  displ[nrow(displ),"Number of Requests"]=total
-  displ$'%age' = paste(round(as.numeric(displ$Number) / total * 100,1),"%")
+  displ[nrow(displ),label]=total
+  displ$'%age' = paste(round(as.numeric(displ[,label]) / total * 100,1),"%")
   return(displ)
 }
 

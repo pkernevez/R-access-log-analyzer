@@ -42,12 +42,6 @@ print(g)
 ```
 
 # Response analysis
-## Top 10 of big response size
-```{r echo=FALSE}
-log("Creating top big response size")
-df=access_log[with(access_log, order(-response.size)),][1:10,c("response.size", "ts", "category", "method", "url_extract", "status")]
-pander(df, style = 'rmarkdown', split.table = 1000)
-```
 
 ## Top 10 of most call URL
 ```{r echo=FALSE}
@@ -61,6 +55,15 @@ pander(tmp[nrow(tmp):1,], style = 'rmarkdown', split.table = 1000)
 
 ## Method
 <!-- http_method -->
+```{r echo=FALSE}
+log("Creating http_method distribution")
+tmp = data.table(access_log)[, length(ip), by = method]
+setkey( tmp, method)
+setnames(tmp, "V1", "Number of requests")
+tmp$percentage = paste(round(tmp$'Number of requests' / nrow(access_log) * 100,1), "%")
+pander(tmp, style = 'rmarkdown', split.table = 1000)
+```
+
 ```{r echo=FALSE, h=S_HEIGHT, w=S_WIDTH}
 log("Creating http_method")
 df <- as.data.frame(table(access_log$method))
@@ -69,7 +72,7 @@ g = ggplot(df, aes(x = "", y = freq, fill = method, color = method)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start = 0) +
   labs(title = "HTTP Methods distribution") + xlab("")
-  print(g)
+print(g)
 ```
 
 ## HTTP Code
@@ -144,17 +147,17 @@ print(g)
 ## Most connected clients
 ```{r echo=FALSE}
 log("Creating Most connected clients")
-tmp=tmp[nrow(tmp):1,][1:min(10,nrow(tmp))]
-pander(tmp, style = 'rmarkdown', split.table = 1000)
+mostClient=tmp[nrow(tmp):1,][1:min(10,nrow(tmp))]
+pander(mostClient, style = 'rmarkdown', split.table = 1000)
 ```
 
 # Response time distribution
 <a name="sometext"></a>
-## Summary
+## Response time summary by category
 ```{r echo=FALSE}
 log("Creating all_responsetime_distribution")
 distrib = by(access_log, access_log$category, function(x) list(nrow(x), summary(x$response.time_millis)))
-displ = analyseDistribution(access_log$response.time_millis, distrib)
+displ = analyseDistribution(access_log$response.time_millis, distrib, "Number of Requests")
 
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
@@ -244,5 +247,99 @@ for (cat in CATEGORY_NAMES) {
 }
 ```
 
+# Response size analysis
+## Top 10 of big response size
+```{r echo=FALSE}
+accesslog_with_size = access_log[complete.cases(access_log[,"response.size"]),]
+startDate = min(accesslog_with_size$ts)
+accesslog_with_size$interval = as.numeric(difftime(accesslog_with_size$ts, startDate), units="secs") %/% INTERVAL_IN_SECONDS
+accesslog_with_size$top_ip = as.character(accesslog_with_size$ip)
+accesslog_with_size[accesslog_with_size$ip %!in% mostClient$ip, "top_ip"] = "Other"
+log("Creating top big response size")
+df=accesslog_with_size[with(accesslog_with_size, order(-response.size)),][1:10,c("response.size", "ts", "category", "method", "url_extract", "status")]
+pander(df, style = 'rmarkdown', split.table = 1000)
+```
 
-  
+## Response size summary by category
+```{r echo=FALSE}
+log("Creating all_responsesize_summary_by_category")
+distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
+displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total bandwidth (MB)")
+pander(displ, style = 'rmarkdown', split.table = 1000)
+```
+
+## Response size summary by ip
+```{r echo=FALSE}
+log("Creating all_responsesize_summary_by_ip")
+distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
+displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total bandwidth (MB)")
+pander(displ, style = 'rmarkdown', split.table = 1000)
+```
+
+## Bandwidth over time
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_bandwith_over_time")
+log(startDate)
+distrib = by(accesslog_with_size, accesslog_with_size$interval, function(x) {sum(x$response.size)/1024/1024})
+dt = data.frame(date=startDate+as.numeric(names(distrib))*INTERVAL_IN_SECONDS, bandwidth=as.vector(distrib))
+
+g = ggplot(dt, aes(date)) + 
+  xlab("Time") + ylab(paste0('bandwith (MB) by ', INTERVAL_AS_TEXT)) +
+  geom_point(aes(y = bandwidth)) + 
+  ggtitle("Bandwidth evolution") +
+  stat_smooth(data=dt, aes(x=date, y=bandwidth), colour="red",method = "gam", formula = y ~ s(x, bs = "cs"))
+print(g)
+``` 
+
+
+## Response size distribution
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsesize_distribution")
+g = ggplot(accesslog_with_size, aes(x = response.size)) + 
+  geom_density(colour = "black", fill = "darkgreen")  + xlab("Response size (bytes)") 
+print(g)
+``` 
+
+## Response size distribution per category
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsesize_distribution_by_type")
+xmax = quantile(accesslog_with_size$response.size, c(PERCENTILE_FOR_DISTRIBUTION))
+xmin = min(accesslog_with_size$response.size)
+g = ggplot(accesslog_with_size, aes(x = response.size)) + 
+  geom_density(aes(group=category, colour=category))  + 
+  xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
+  coord_cartesian(xlim=c(xmin, xmax))
+print(g)
+```
+
+## Response size distribution per client IP
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+log("Creating all_responsesize_distribution_by_type")
+xmax = quantile(accesslog_with_size$response.size, c(PERCENTILE_FOR_DISTRIBUTION))
+xmin = min(accesslog_with_size$response.size)
+g = ggplot(accesslog_with_size, aes(x = response.size)) + 
+  geom_density(aes(group=top_ip, colour=top_ip))  + 
+  xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
+  coord_cartesian(xlim=c(xmin, xmax))
+print(g)
+```
+
+## Top 5 big requests and distribution per category
+<!-- Reponse time table -->
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+for (cat in CATEGORY_NAMES) {
+cat("### ", cat)
+log(paste("Distribution", cat))
+subdata = accesslog_with_size[accesslog_with_size$category==cat ,]
+  df=subdata[with(subdata, order(-response.size)),][1:5,c("response.size", "ts", "method", "url_extract", "status")]
+  cat(pander(df, style = 'rmarkdown', split.table = 1000))
+  xmax = quantile(subdata$response.size, c(PERCENTILE_FOR_DISTRIBUTION))
+  xmin = min(subdata$response.size)
+  g = ggplot(subdata, aes(x = response.size)) + 
+    geom_density()  + xlab(paste0("Response size (bytes, max=",max(subdata$response.size),")")) +
+    coord_cartesian(xlim=c(xmin, xmax))
+  print(g)
+  cat("\n")
+}
+rm(df, subdata)
+``` 
