@@ -1,7 +1,7 @@
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
-DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
-#DEFAULT_FILE_NAME="data/access_generic_extract.log"
+#DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
+DEFAULT_FILE_NAME="data/access_generic_extract.log"
 #DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
 INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval use for computing throughput (ie groupby)
 URL_EXTRACT_SIZE=40                                     # Size of URL extract for report
@@ -28,6 +28,7 @@ CATEGORIES=list(                                        # Patterns use to define
 #   "CSS"=".*\\.css HTTP/",
 #   "HTML"=".*\\.html HTTP/"
 # )
+
 
 
 load_and_install = function(lib){
@@ -135,7 +136,7 @@ ReadLogFile <- function(file ) {
   access_log$category = factor(access_log$category, levels=CATEGORY_NAMES)
   access_log$url_extract = sapply(access_log$request, extract)
   log("File loaded ( ", nrow(access_log), " rows )")
-  access_log
+  return(access_log)
 }
 
 analyseDistribution = function(allData, distrib, label) {
@@ -151,11 +152,14 @@ analyseDistribution = function(allData, distrib, label) {
     displ[i,4:9] = info[[2]]
     total = total + info[[1]]
   }
+  displ[,label] = as.numeric(displ[,label])
   displ[nrow(displ),label]=total
-  displ$'%age' = paste(round(as.numeric(displ[,label]) / total * 100,1),"%")
+  displ$'%age' = paste(round(displ[,label] / total * 100,1),"%")
+  tmp_order = c(order(head(displ[,label],-1), decreasing = TRUE), nrow(displ))
+  displ = displ[tmp_order,]
+  rownames(displ) = NULL
   return(displ)
 }
-
 tmpAccess = lapply(FILE_NAMES, ReadLogFile)
 access_log = Reduce(function(...) merge(..., all=T), tmpAccess)
 rm(tmpAccess)

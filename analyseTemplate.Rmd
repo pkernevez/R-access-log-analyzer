@@ -19,6 +19,11 @@ df=data.frame(names=names(CATEGORIES), regexp=sapply(values, cleanStr, USE.NAMES
 pander(df, style = 'rmarkdown', split.table = 24000)
 ``` 
 
+```{r echo=FALSE, results='asis',}
+if (max(access_log$response.time_millis) == 0) {
+  cat('<span style="color:red">The accesslog file doesn\'t contain duration data. Don\'t take care of duration reports. You should add "%D" at the end of the accesslog format to enable duration analyse.</span>\n')
+}
+``` 
 
 # Requests throughput over time
 ## All responses
@@ -61,6 +66,7 @@ tmp = data.table(access_log)[, length(ip), by = method]
 setkey( tmp, method)
 setnames(tmp, "V1", "Number of requests")
 tmp$percentage = paste(round(tmp$'Number of requests' / nrow(access_log) * 100,1), "%")
+tmp=tmp[order(tmp$'Number of requests', decreasing = TRUE)]
 pander(tmp, style = 'rmarkdown', split.table = 1000)
 ```
 
@@ -158,7 +164,6 @@ pander(mostClient, style = 'rmarkdown', split.table = 1000)
 log("Creating all_responsetime_distribution")
 distrib = by(access_log, access_log$category, function(x) list(nrow(x), summary(x$response.time_millis)))
 displ = analyseDistribution(access_log$response.time_millis, distrib, "Number of Requests")
-
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
@@ -282,8 +287,17 @@ log("Creating all_bandwith_over_time")
 log(startDate)
 distrib = by(accesslog_with_size, accesslog_with_size$interval, function(x) {sum(x$response.size)/1024/1024})
 dt = data.frame(date=startDate+as.numeric(names(distrib))*INTERVAL_IN_SECONDS, bandwidth=as.vector(distrib))
+```
 
-g = ggplot(dt, aes(date)) + 
+Bandwidth summary (MB by interval of `r INTERVAL_AS_TEXT` )
+```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
+tmpSum = summary(dt$bandwidth)
+displ = data.frame(matrix(NA,ncol=length(names(tmpSum)),nrow=1))
+names(displ)=names(tmpSum)
+displ[1,]=tmpSum
+pander(displ, style = 'rmarkdown', split.table = 1000)
+
+g = ggplot(dt, aes(date, ymin=0)) + 
   xlab("Time") + ylab(paste0('bandwith (MB) by ', INTERVAL_AS_TEXT)) +
   geom_point(aes(y = bandwidth)) + 
   ggtitle("Bandwidth evolution") +
