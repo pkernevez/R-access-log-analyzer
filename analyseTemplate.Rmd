@@ -9,7 +9,7 @@ Source files : `r FILE_NAMES`
 
 Number of lines : `r nrow(access_log)`
 
-Measure from `r format(min(access_log$ts), RENDER_DATE_FORMAT)` 
+Measured from `r format(min(access_log$ts), RENDER_DATE_FORMAT)` 
 to `r format(max(access_log$ts), RENDER_DATE_FORMAT)`
 
 Regex used to define requests' categories :
@@ -21,7 +21,7 @@ pander(df, style = 'rmarkdown', split.table = 24000)
 
 ```{r echo=FALSE, results='asis',}
 if (max(access_log$response.time_millis) == 0) {
-  cat('<span style="color:red">The accesslog file doesn\'t contain duration data. Don\'t take care of duration reports. You should add "%D" at the end of the accesslog format to enable duration analyse.</span>\n')
+  cat('<span style="color:red">The accesslog file doesn\'t contain duration data. Please disregard of duration reports. You should add "%D" at the end of the accesslog format to enable duration analysis.</span>\n')
 }
 ``` 
 
@@ -48,7 +48,7 @@ print(g)
 
 # Response analysis
 
-## Top 10 of most call URL
+## Top 10 of most called URL
 ```{r echo=FALSE}
 log("Creating top  most call URL")
 tmp = data.table(access_log)[, length(status), by = request]
@@ -87,7 +87,7 @@ log("Creating response code table")
 tmp = data.table(access_log)[, length(ip), by = status]
 setkey( tmp, status)
 setnames(tmp, "V1", "Number of requests")
-tmp$percentage = paste(round(tmp$'Number of requests' / nrow(access_log) * 100,1), "%")
+tmp$ratio = paste(round(tmp$'Number of requests' / nrow(access_log) * 100,1), "%")
 pander(tmp, style = 'rmarkdown', split.table = 1000)
 ```
 
@@ -125,13 +125,13 @@ g = ggplot(access_log[server.errors,], aes(x=ts)) +
   print(g)
 ```
 
-# Clients
+# Connected IP
 ## Info
-Number of clients (IP Address) : `r length(unique(access_log$ip))`
+Number of IPs : `r length(unique(access_log$ip))`
 
-Number of requests per client (IP Address) :
+Number of requests per IP :
 ```{r echo=FALSE}
-log("Creating Number of requests per client")
+log("Creating Number of requests per IP")
 tmp = data.table(access_log)[, length(status), by = ip]
 setkey( tmp, V1)
 setnames(tmp, "V1", "Number of requests")
@@ -142,17 +142,17 @@ displ[1,]=tmpSum
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
-Distribution of requests' number per client (IP Address) :
+Distribution of the number of requests per IP :
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 setnames(tmp, "Number of requests", "Number_of_requests")
 g = ggplot(tmp, aes(x = Number_of_requests)) + 
-  geom_density(colour = "black", fill = "darkgreen")  + xlab("Number of requests per client (IP Address)") 
+  geom_density(colour = "black", fill = "darkgreen")  + xlab("Number of requests per IP)") 
 print(g)
 ``` 
 
-## Most connected clients
+## IP with the highest number of connections
 ```{r echo=FALSE}
-log("Creating Most connected clients")
+log("Creating Most connected IP")
 mostClient=tmp[nrow(tmp):1,][1:min(10,nrow(tmp))]
 pander(mostClient, style = 'rmarkdown', split.table = 1000)
 ```
@@ -168,7 +168,7 @@ pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
 ## All requests
-### Top 10 slow requests 
+### Top 10 slowest requests 
 ```{r echo=FALSE}
 log("Creating Top 10 slow request")
 df=access_log[with(access_log, order(-response.time_millis)),][1:10,c("response.time_millis", "ts", "category", "method", "url_extract", "status")]
@@ -194,7 +194,7 @@ g = ggplot(access_log, aes(x = response.time_millis)) +
 print(g)
 ```
 
-## Top 5 slow requests and distribution per category
+## Top 5 slowest requests and distribution per category
 <!-- Reponse time table -->
 ```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
 for (cat in CATEGORY_NAMES) {
@@ -253,7 +253,7 @@ for (cat in CATEGORY_NAMES) {
 ```
 
 # Response size analysis
-## Top 10 of big response size
+## Top 10 biggest response
 ```{r echo=FALSE}
 accesslog_with_size = access_log[complete.cases(access_log[,"response.size"]),]
 startDate = min(accesslog_with_size$ts)
@@ -269,15 +269,15 @@ pander(df, style = 'rmarkdown', split.table = 1000)
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_category")
 distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
-displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total bandwidth (MB)")
+displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
-## Response size summary by ip
+## Response size summary by IP
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_ip")
 distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
-displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total bandwidth (MB)")
+displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
@@ -326,7 +326,7 @@ g = ggplot(accesslog_with_size, aes(x = response.size)) +
 print(g)
 ```
 
-## Response size distribution per client IP
+## Response size distribution per IP
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 log("Creating all_responsesize_distribution_by_type")
 xmax = quantile(accesslog_with_size$response.size, c(PERCENTILE_FOR_DISTRIBUTION))
@@ -338,7 +338,7 @@ g = ggplot(accesslog_with_size, aes(x = response.size)) +
 print(g)
 ```
 
-## Top 5 big requests and distribution per category
+## Top 5 biggest requests and distribution per category
 <!-- Reponse time table -->
 ```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
 for (cat in CATEGORY_NAMES) {
