@@ -19,8 +19,9 @@ More information there : [Apache docs](http://httpd.apache.org/docs/2.2/logs.htm
 
 ## Samples
 You can find sample reports in the folder [Samples]
-* [Simple short report with duration](Samples/analyseSampleDuration.html)
-* [Simple short report without duration](Samples/analyseSampleNoDuration.html) :
+* [Simple short report with duration](https://rawgit.com/pkernevez/R-access-log-analyzer/master/Samples/analyseSampleDuration.html)
+* [Simple short report without duration](https://rawgit.com/pkernevez/R-access-log-analyzer/master/Samples/analyseSampleNoDuration.html)
+
 Those sample have been generated with public data from NASA : ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul95.gz
 Version with duration is also available in the folder [data](data/NASA_log_samples.zip).
 
