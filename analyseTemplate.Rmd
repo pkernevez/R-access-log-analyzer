@@ -190,8 +190,8 @@ xmin = min(access_log$response.time_millis)
 g = ggplot(access_log, aes(x = response.time_millis)) + 
   geom_density(aes(group=category, colour=category))  + 
   xlab(paste0("Response time (max=",max(access_log$response.time_millis),")")) +
-  coord_cartesian(xlim=c(xmin, xmax))
-print(g)
+  scale_x_continuous(limits=c(xmin, xmax))
+suppressWarnings(print(g))
 ```
 
 ## Top 5 slowest requests and distribution per category
@@ -207,8 +207,8 @@ subdata = access_log[access_log$category==cat ,]
   xmin = min(subdata$response.time_millis)
   g = ggplot(subdata, aes(x = response.time_millis)) + 
     geom_density()  + xlab(paste0("Response time (max=",max(subdata$response.time_millis),")")) +
-    coord_cartesian(xlim=c(xmin, xmax))
-  print(g)
+    scale_x_continuous(limits=c(xmin, xmax))
+  suppressWarnings(print(g))
   cat("\n")
 }
 rm(df, subdata)
@@ -322,8 +322,8 @@ xmin = min(accesslog_with_size$response.size)
 g = ggplot(accesslog_with_size, aes(x = response.size)) + 
   geom_density(aes(group=category, colour=category))  + 
   xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
-  coord_cartesian(xlim=c(xmin, xmax))
-print(g)
+  scale_x_continuous(limits=c(xmin, 100*xmax))
+suppressWarnings(print(g))
 ```
 
 ## Response size distribution per IP
@@ -334,8 +334,8 @@ xmin = min(accesslog_with_size$response.size)
 g = ggplot(accesslog_with_size, aes(x = response.size)) + 
   geom_density(aes(group=top_ip, colour=top_ip))  + 
   xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
-  coord_cartesian(xlim=c(xmin, xmax))
-print(g)
+  scale_x_continuous(limits=c(xmin, xmax))
+suppressWarnings(print(g))
 ```
 
 ## Top 5 biggest requests and distribution per category
@@ -351,8 +351,8 @@ subdata = accesslog_with_size[accesslog_with_size$category==cat ,]
   xmin = min(subdata$response.size)
   g = ggplot(subdata, aes(x = response.size)) + 
     geom_density()  + xlab(paste0("Response size (bytes, max=",max(subdata$response.size),")")) +
-    coord_cartesian(xlim=c(xmin, xmax))
-  print(g)
+    scale_x_continuous(limits=c(xmin, xmax))
+  suppressWarnings(print(g))
   cat("\n")
 }
 rm(df, subdata)

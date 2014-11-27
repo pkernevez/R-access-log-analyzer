@@ -1,33 +1,32 @@
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
 #DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
-DEFAULT_FILE_NAME="data/access_generic_extract.log"
+DEFAULT_FILE_NAME="data/NASA_access_log_Jul95"
 #DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
-INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval use for computing throughput (ie groupby)
-URL_EXTRACT_SIZE=40                                     # Size of URL extract for report
+INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval used for computing throughput (ie groupby)
+URL_EXTRACT_SIZE=60                                     # Size of URL extract for report
 S_WIDTH=6                                               # Width of Small graphs (pies)
 S_HEIGHT=6                                              # Height of Small graphs (pies)
 B_WIDTH=11                                              # Width of Big graphs 
 B_HEIGHT=7                                              # Height of Big graphs
-PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile use for cuting the distribution graph (due to extreme values)
-ERROR_PATTERN='(5..|4.[^1])'                            # Pattern use to identifie HTTP Error, all 5xx and 4xx but 401.
-CATEGORIES=list(                                        # Patterns use to define Categories
-  "Confluence"="[A-Z]+\ /confluence/.*",
-  "Archiva"="[A-Z]+\ /archiva/.*",
-  "Svn"="[A-Z]+\ /svn/.*",
-  "Daniela"="[A-Z]+\ /daniela/.*",
-  "Archirepo"="[A-Z]+\ /archirepo/.*",
-  "Nexus"="[A-Z]+\ /nexus/.*",
-  "MavenRepo"="[A-Z]+\ /mavenrepository/.*",
-  "Jira"="[A-Z]+\ /jira/.*"
-)
-# CATEGORIES=list(                                        # Patterns use to define Categories
-#   "PAC"=".*\\.pac HTTP/",
-#   "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
-#   "JS"=".*\\.js HTTP/",
-#   "CSS"=".*\\.css HTTP/",
-#   "HTML"=".*\\.html HTTP/"
+PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile used for cutting the distribution graph (due to extreme values)
+ERROR_PATTERN='(5..|4.[^1])'                            # Pattern used to identify HTTP Errors, all 5xx and 4xx but 401.
+  
+#CATEGORIES=list(                                        # Patterns used to define Categories (analysis axes)
+#   "Confluence"="[A-Z]+\ /confluence/.*",
+#   "Archiva"="[A-Z]+\ /archiva/.*",
+#   "Svn"="[A-Z]+\ /svn/.*",
+#   "Daniela"="[A-Z]+\ /daniela/.*",
+#   "Archirepo"="[A-Z]+\ /archirepo/.*",
+#   "Nexus"="[A-Z]+\ /nexus/.*",
+#   "MavenRepo"="[A-Z]+\ /mavenrepository/.*",
+#   "Jira"="[A-Z]+\ /jira/.*"
 # )
+CATEGORIES=list(                                        # Patterns used to define Categories (analysis axes)
+  "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
+  "HTML"=".*\\.html HTTP/",
+  "CGI"="GET /cgi"
+)
 
 
 
@@ -112,11 +111,11 @@ ReadLogFile <- function(file ) {
   if (countToken(" ", titleLine) == 8){ # No duration
     log("Find 8 columns, add an empty duration to measure")
     access_log <- read.table(fullFileName, col.names = c("ip", "client", "user", "ts",
-       "time_zone", "request", "status", "response.size"))
+       "time_zone", "request", "status", "response.size"), comment.char="")
     access_log$response.time_microsec = 0
   } else {
     access_log <- read.table(fullFileName, col.names = c("ip", "client", "user", "ts",
-       "time_zone", "request", "status", "response.size", "response.time_microsec"))
+       "time_zone", "request", "status", "response.size", "response.time_microsec"), comment.char="")
   }
   
   access_log$ts <- strptime(access_log$ts, format = FILE_DATE_FORMAT)
