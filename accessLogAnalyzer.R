@@ -12,7 +12,7 @@ B_WIDTH=11                                              # Width of Big graphs
 B_HEIGHT=7                                              # Height of Big graphs
 PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile used for cutting the distribution graph (due to extreme values)
 ERROR_PATTERN='(5..|4.[^1])'                            # Pattern used to identify HTTP Errors, all 5xx and 4xx but 401.
-  
+TIME_IN_MICROSECONDS = TRUE                             # Are times in microsends (Apache) or in milliseconds (Tomcat)  
 #CATEGORIES=list(                                        # Patterns used to define Categories (analysis axes)
 #   "Confluence"="[A-Z]+\ /confluence/.*",
 #   "Archiva"="[A-Z]+\ /archiva/.*",
@@ -122,7 +122,11 @@ ReadLogFile <- function(file ) {
   access_log$status <- as.factor(sub("\\]", "", access_log$status))
   access_log$response.size = suppressWarnings(as.numeric(as.character(access_log$response.size)))
   log("Create category")
-  access_log$response.time_millis = round(access_log$response.time_microsec/1000)
+  if (TIME_IN_MICROSECONDS){
+    access_log$response.time_millis = round(access_log$response.time_microsec/1000)
+  } else {
+    access_log$response.time_millis = access_log$response.time_microsec
+  }
   access_log$category="Other"
   access_log$method = str_match(access_log$request, "^([A-Za-z]+)")[,1]
   
