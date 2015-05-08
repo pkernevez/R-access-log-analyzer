@@ -41,6 +41,7 @@ B_WIDTH=11                                              # Width of Big graphs
 B_HEIGHT=7                                              # Height of Big graphs
 PERCENTILE_FOR_DISTRIBUTION=0.995                       # Percentile used for cutting the distribution graph (due to extreme values)
 ERROR_PATTERN='(5..|4.[^1])'                            # Pattern used to identify HTTP Errors, all 5xx and 4xx but 401.
+TIME_IN_MICROSECONDS = TRUE                             # Are times in microsends (Apache) or in milliseconds (Tomcat)  
 CATEGORIES=list(                                        # Patterns used to define Categories (analysis axes)
   "PAC"=".*\\.pac HTTP/",
   "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",

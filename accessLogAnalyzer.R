@@ -1,7 +1,8 @@
+Sys.setlocale("LC_TIME", 'en_US')                       # Default accesslog format 
+
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
-#DEFAULT_FILE_NAME="data/access_generic.log"             # Default accesslog file (when no cmd line parameter)
-DEFAULT_FILE_NAME="data/NASA_access_log_Jul95"
+DEFAULT_FILE_NAME=list.files(pattern = "access_log.*filter", recursive=TRUE)
 #DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
 INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval used for computing throughput (ie groupby)
 URL_EXTRACT_SIZE=60                                     # Size of URL extract for report
@@ -27,8 +28,6 @@ CATEGORIES=list(                                        # Patterns used to defin
   "HTML"=".*\\.html HTTP/",
   "CGI"="GET /cgi"
 )
-
-
 
 load_and_install = function(lib){
   if(!lib %in% installed.packages()[,"Package"]) install.packages(lib)
@@ -141,14 +140,15 @@ ReadLogFile <- function(file ) {
 analyseDistribution = function(allData, distrib, label) {
   distrib[sapply(distrib, is.null)] <- NULL
   displ = data.frame(matrix(NA,ncol=9,nrow=length(distrib)+1))
-  names(displ)=c("Category", label, "%age", names(distrib[[1]][[2]]))
+  names(displ)=c("Category", label, "%age", "Mean", "1st Qu.", "Median", "3rd Qu.", "Percentile 95%", "Max")
   displ[nrow(displ),] = c("All requests", 0, 0, summary(allData))
   total=0
   for (i in 1:length(distrib)) {
     displ[i,"Category"] = names(distrib)[[i]]
     info = distrib[[i]]
     displ[i,label] = info[[1]]
-    displ[i,4:9] = info[[2]]
+    displ[i,4] = info[[2]]
+    displ[i,5:9] = info[[3]]
     total = total + info[[1]]
   }
   displ[,label] = as.numeric(displ[,label])

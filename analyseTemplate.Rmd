@@ -157,32 +157,32 @@ mostClient=tmp[nrow(tmp):1,][1:min(10,nrow(tmp))]
 pander(mostClient, style = 'rmarkdown', split.table = 1000)
 ```
 
-# Response time distribution
+# Response time distribution (ms)
 <a name="sometext"></a>
 ## Response time summary by category
 ```{r echo=FALSE}
 log("Creating all_responsetime_distribution")
-distrib = by(access_log, access_log$category, function(x) list(nrow(x), summary(x$response.time_millis)))
+distrib = by(access_log, access_log$category, function(x) list(nrow(x), round(mean(x$response.time_millis)), round(quantile(x$response.time_millis, c(.25, .50,  .75, .95, 1)))))
 displ = analyseDistribution(access_log$response.time_millis, distrib, "Number of Requests")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
 
 ## All requests
-### Top 10 slowest requests 
+### Top 10 slowest requests (ms)
 ```{r echo=FALSE}
 log("Creating Top 10 slow request")
 df=access_log[with(access_log, order(-response.time_millis)),][1:10,c("response.time_millis", "ts", "category", "method", "url_extract", "status")]
 pander(df, style = 'rmarkdown', split.table = 1000)
 ```
 
-### Distribution
+### Distribution (ms)
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 g = ggplot(access_log, aes(x = response.time_millis)) + 
   geom_density(colour = "black", fill = "darkgreen")  + xlab("Response time (milliseconds)") 
 print(g)
 ``` 
 
-### Distribution per categories
+### Distribution per categories (ms)
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 log("Creating all_responsetime_distribution_by_type")
 xmax = quantile(access_log$response.time_millis, c(PERCENTILE_FOR_DISTRIBUTION))
@@ -191,10 +191,12 @@ g = ggplot(access_log, aes(x = response.time_millis)) +
   geom_density(aes(group=category, colour=category))  + 
   xlab(paste0("Response time (max=",max(access_log$response.time_millis),")")) +
   scale_x_continuous(limits=c(xmin, xmax))
+  scale_x_continuous(breaks=c(0, 5000, 5000))+
+  coord_cartesian(xlim =c(xmin, xmax))
 suppressWarnings(print(g))
 ```
 
-## Top 5 slowest requests and distribution per category
+## Top 5 slowest requests and distribution per category (ms)
 <!-- Reponse time table -->
 ```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
 for (cat in CATEGORY_NAMES) {
@@ -207,7 +209,7 @@ subdata = access_log[access_log$category==cat ,]
   xmin = min(subdata$response.time_millis)
   g = ggplot(subdata, aes(x = response.time_millis)) + 
     geom_density()  + xlab(paste0("Response time (max=",max(subdata$response.time_millis),")")) +
-    scale_x_continuous(limits=c(xmin, xmax))
+    coord_cartesian(xlim =c(xmin, xmax))
   suppressWarnings(print(g))
   cat("\n")
 }
@@ -215,7 +217,7 @@ rm(df, subdata)
 ``` 
 
 # Reponse time over time
-## Global
+## Global (ms)
 ```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
 log("Creating response_time_by_time")
 g = ggplot(access_log, aes(ts)) + 
@@ -236,7 +238,7 @@ g = ggplot(access_log, aes(ts)) +
 print(g)
 ```
 
-## Per category
+## Per category (ms)
 ```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
 for (cat in CATEGORY_NAMES) {
     log(paste0("Creating response_time_by_time_and_", cat))
@@ -268,7 +270,7 @@ pander(df, style = 'rmarkdown', split.table = 1000)
 ## Response size summary by category
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_category")
-distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
+distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.time_millis)), round(quantile(x$response.time_millis, c(.25, .50,  .75, .95, 1)))))
 displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
@@ -276,7 +278,7 @@ pander(displ, style = 'rmarkdown', split.table = 1000)
 ## Response size summary by IP
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_ip")
-distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), summary(x$response.size)))
+distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.time_millis)), round(quantile(x$response.time_millis, c(.25, .50,  .75, .95, 1)))))
 displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
@@ -322,7 +324,7 @@ xmin = min(accesslog_with_size$response.size)
 g = ggplot(accesslog_with_size, aes(x = response.size)) + 
   geom_density(aes(group=category, colour=category))  + 
   xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
-  scale_x_continuous(limits=c(xmin, 100*xmax))
+  coord_cartesian(xlim =c(xmin, 100*xmax))
 suppressWarnings(print(g))
 ```
 
@@ -334,7 +336,7 @@ xmin = min(accesslog_with_size$response.size)
 g = ggplot(accesslog_with_size, aes(x = response.size)) + 
   geom_density(aes(group=top_ip, colour=top_ip))  + 
   xlab(paste0("Response size (bytes, max=",max(accesslog_with_size$response.size),")")) +
-  scale_x_continuous(limits=c(xmin, xmax))
+  coord_cartesian(xlim =c(xmin, xmax))
 suppressWarnings(print(g))
 ```
 
@@ -351,7 +353,7 @@ subdata = accesslog_with_size[accesslog_with_size$category==cat ,]
   xmin = min(subdata$response.size)
   g = ggplot(subdata, aes(x = response.size)) + 
     geom_density()  + xlab(paste0("Response size (bytes, max=",max(subdata$response.size),")")) +
-    scale_x_continuous(limits=c(xmin, xmax))
+    coord_cartesian(xlim =c(xmin, xmax))
   suppressWarnings(print(g))
   cat("\n")
 }
