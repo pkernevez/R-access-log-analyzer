@@ -143,16 +143,18 @@ ReadLogFile <- function(file ) {
 
 analyseDistribution = function(allData, distrib, label) {
   distrib[sapply(distrib, is.null)] <- NULL
-  displ = data.frame(matrix(NA,ncol=9,nrow=length(distrib)+1))
-  names(displ)=c("Category", label, "%age", "Mean", "1st Qu.", "Median", "3rd Qu.", "Percentile 95%", "Max")
-  displ[nrow(displ),] = c("All requests", 0, 0, summary(allData))
+  displ = data.frame(matrix(NA,ncol=10,nrow=length(distrib)+1))
+  names(displ)=c("Category", label, "%age", "Mean", "Min", "1st Qu.", "Median", "3rd Qu.", "Percentile 95%", "Max")
+  displ[nrow(displ),] = c("All requests", 0, 0, 
+                          round(mean(allData)), 
+                          round(quantile(allData, c(0, .25, .50,  .75, .95, 1))))
   total=0
   for (i in 1:length(distrib)) {
     displ[i,"Category"] = names(distrib)[[i]]
     info = distrib[[i]]
     displ[i,label] = info[[1]]
     displ[i,4] = info[[2]]
-    displ[i,5:9] = info[[3]]
+    displ[i,5:10] = info[[3]]
     total = total + info[[1]]
   }
   displ[,label] = as.numeric(displ[,label])
