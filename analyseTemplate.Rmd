@@ -204,6 +204,7 @@ cat("### ", cat)
 log(paste("Distribution", cat))
 subdata = access_log[access_log$category==cat ,]
   df=subdata[with(subdata, order(-response.time_millis)),][1:5,c("response.time_millis", "ts", "method", "url_extract", "status")]
+  df = as.matrix(df)
   cat(pander(df, style = 'rmarkdown', split.table = 1000))
   xmax = quantile(subdata$response.time_millis, c(PERCENTILE_FOR_DISTRIBUTION))
   xmin = min(subdata$response.time_millis)
@@ -348,6 +349,7 @@ cat("### ", cat)
 log(paste("Distribution", cat))
 subdata = accesslog_with_size[accesslog_with_size$category==cat ,]
   df=subdata[with(subdata, order(-response.size)),][1:5,c("response.size", "ts", "method", "url_extract", "status")]
+  df = as.matrix(df)
   cat(pander(df, style = 'rmarkdown', split.table = 1000))
   xmax = quantile(subdata$response.size, c(PERCENTILE_FOR_DISTRIBUTION))
   xmin = min(subdata$response.size)
