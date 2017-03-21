@@ -109,9 +109,12 @@ pander(tmp, style = 'rmarkdown', split.table = 1000)
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 log("Creating response_error")
 server.errors <- grep(ERROR_PATTERN,access_log$status)
-g = ggplot(access_log[server.errors,], aes(x=status)) + geom_histogram(colour="black", fill="red") +
+access_log$status_int = as.integer(as.character(access_log$status))
+
+g = ggplot(access_log[server.errors,], aes(x=status_int)) + geom_histogram(colour="black", fill="red") +
   labs(title = "HTTP errors distribution")
 print(g)
+access_log$status_int <- NULL
 ```
 
 ### Errors over time
