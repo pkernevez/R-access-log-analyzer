@@ -273,7 +273,7 @@ pander(df, style = 'rmarkdown', split.table = 1000)
 ## Response size summary by category
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_category")
-distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.time_millis)), round(quantile(x$response.time_millis, c(0, .25, .50,  .75, .95, 1)))))
+distrib = by(accesslog_with_size, accesslog_with_size$category, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.size)), round(quantile(x$response.size, c(0, .25, .50,  .75, .95, 1)))))
 displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
@@ -281,7 +281,7 @@ pander(displ, style = 'rmarkdown', split.table = 1000)
 ## Response size summary by IP
 ```{r echo=FALSE}
 log("Creating all_responsesize_summary_by_ip")
-distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.time_millis)), round(quantile(x$response.time_millis, c(0, .25, .50,  .75, .95, 1)))))
+distrib = by(accesslog_with_size, accesslog_with_size$top_ip, function(x) list(round(sum(x$response.size)/1024/1024,1), round(mean(x$response.size)), round(quantile(x$response.size, c(0, .25, .50,  .75, .95, 1)))))
 displ = analyseDistribution(accesslog_with_size$response.size, distrib, "Total downloaded (MB)")
 pander(displ, style = 'rmarkdown', split.table = 1000)
 ```
