@@ -109,12 +109,9 @@ pander(tmp, style = 'rmarkdown', split.table = 1000)
 ```{r echo=FALSE, h=B_HEIGHT, w=B_WIDTH}
 log("Creating response_error")
 server.errors <- grep(ERROR_PATTERN,access_log$status)
-access_log$status_int = as.integer(as.character(access_log$status))
-
-g = ggplot(access_log[server.errors,], aes(x=status_int)) + geom_histogram(colour="black", fill="red") +
+g = ggplot(access_log[server.errors,], aes(x=status)) + geom_bar(colour="black", fill="red") +
   labs(title = "HTTP errors distribution")
 print(g)
-access_log$status_int <- NULL
 ```
 
 ### Errors over time
@@ -175,6 +172,7 @@ pander(displ, style = 'rmarkdown', split.table = 1000)
 ```{r echo=FALSE}
 log("Creating Top 10 slow request")
 df=access_log[with(access_log, order(-response.time_millis)),][1:10,c("response.time_millis", "ts", "category", "method", "url_extract", "status")]
+df=as.matrix(df)
 pander(df, style = 'rmarkdown', split.table = 1000)
 ```
 
@@ -268,6 +266,7 @@ accesslog_with_size$top_ip = as.character(accesslog_with_size$ip)
 accesslog_with_size[accesslog_with_size$ip %!in% mostClient$ip, "top_ip"] = "Other"
 log("Creating top big response size")
 df=accesslog_with_size[with(accesslog_with_size, order(-response.size)),][1:10,c("response.size", "ts", "category", "method", "url_extract", "status")]
+df=as.matrix(df)
 pander(df, style = 'rmarkdown', split.table = 1000)
 ```
 
