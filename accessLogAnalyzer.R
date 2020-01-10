@@ -2,7 +2,7 @@ Sys.setlocale("LC_TIME", 'en_US')                       # Default accesslog form
 
 FILE_DATE_FORMAT="[%d/%b/%Y:%H:%M:%S"                   # Use to parse accesslog
 RENDER_DATE_FORMAT="%Y/%m/%d %H:%M:%S"                  # Date format for the report 
-DEFAULT_FILE_NAME=list.files(pattern = "access_log.*filter", recursive=TRUE)
+DEFAULT_FILE_NAME=list.files(pattern = "access_log_extract", recursive=TRUE)
 #DEFAULT_FILE_NAME="data/access_generic_extract_small.log"
 INTERVAL_IN_SECONDS = 3600 # 3600 !                     # Interval used for computing throughput (ie groupby)
 URL_EXTRACT_SIZE=60                                     # Size of URL extract for report
@@ -25,12 +25,13 @@ TIME_IN_MICROSECONDS = TRUE                             # Are times in microsend
 # )
 CATEGORIES=list(                                        # Patterns used to define Categories (analysis axes)
   "Image"=".*\\.(png|jpg|jpeg|gif|ico) HTTP/",
-  "HTML"=".*\\.html HTTP/",
-  "CGI"="GET /cgi"
+  "HTML"=".*\\.htm.* HTTP/",
+  "CSS"=".*\\.css.* HTTP/",
+  JS = ".*\\.js.* HTTP/"
 )
 
 load_and_install = function(lib){
-  if(!lib %in% installed.packages()[,"Package"]) install.packages(lib)
+  if(!lib %in% installed.packages()[,"Package"]) install.packages(lib, repos='https://stat.ethz.ch/CRAN/')
   suppressPackageStartupMessages(library(lib,character.only=TRUE))
 }
 load_and_install("stringr")
@@ -118,6 +119,7 @@ ReadLogFile <- function(file ) {
   }
   
   access_log$ts <- strptime(access_log$ts, format = FILE_DATE_FORMAT)
+  access_log$ts <- as.POSIXct(access_log$ts)
   access_log$time_zone <- as.factor(sub("\\]", "", access_log$time_zone))
   access_log$status <- as.factor(sub("\\]", "", access_log$status))
   access_log$response.size = suppressWarnings(as.numeric(as.character(access_log$response.size)))
