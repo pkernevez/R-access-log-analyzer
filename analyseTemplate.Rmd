@@ -256,6 +256,22 @@ for (cat in CATEGORY_NAMES) {
 }
 ```
 
+## Per Http method (ms)
+```{r echo=FALSE, comment=NA, results='asis', h=B_HEIGHT, w=B_WIDTH}
+for (meth in unique(access_log$method)) {
+    log(paste0("Creating response_time_by_time_and_", meth))
+    cat("### ", meth, "\n")
+    subdata = access_log[access_log$method==meth ,]
+    g = ggplot(subdata, aes(ts)) + 
+      xlab("Date") + ylab("response time (ms)") +
+      geom_point(aes(y = response.time_millis), alpha=0.3) + 
+      ggtitle(paste0("Response time evolution for ", meth, " and HTTPCode=200")) +
+      stat_smooth(data=subdata, aes(x=ts, y=response.time_millis), colour="red",method = "gam", formula = y ~ s(x, bs = "cs"))
+    print(g)
+    cat("\n")
+}
+```
+
 # Response size analysis
 ## Top 10 biggest response
 ```{r echo=FALSE}

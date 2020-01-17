@@ -1,0 +1,16 @@
+.Rproj.user
+.Rhistory
+.RData
+R-access-log-analyzer.Rproj
+analyseTemplate.html
+figure
+analyse.html
+analyseTemplate.md
+createOctoReverse.sh
+analyseReverse.html
+analyseReverse2.html
+data/NASA_access_log_Jul95.duration
+data/NASA_access_log_Jul95.noduration
+sample_apache_access_log
+data/access_generic*
+data/reverseAccess*
